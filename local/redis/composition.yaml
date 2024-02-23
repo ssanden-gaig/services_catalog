@@ -22,6 +22,7 @@ spec:
         spec:
           writeConnectionSecretToRef:
             name: ## patched
+            namespace: ## patched
           rollbackLimit: 3
           forProvider:
             chart:
@@ -40,7 +41,9 @@ spec:
               string:
                 fmt: "%s-secret"
         - fromFieldPath: metadata.labels["crossplane.io/claim-namespace"]
-          toFieldPath: "spec.forProvider.namespace"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+        - fromFieldPath: metadata.labels["crossplane.io/claim-namespace"]
+          toFieldPath: "spec.forProvider.namespace"  
         - fromFieldPath: metadata.name
           toFieldPath: metadata.annotations[crossplane.io/external-name]
           policy:
