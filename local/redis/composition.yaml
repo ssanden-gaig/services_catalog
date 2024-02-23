@@ -1,0 +1,49 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: db.local.salaboy.com
+  labels:
+    crossplane.io/xrd: xdatabases.salaboy.com
+    type: dev
+    provider: local
+spec:
+  writeConnectionSecretsToNamespace: crossplane-system
+  compositeTypeRef:
+    apiVersion: salaboy.com/v1alpha1
+    kind: XDatabase
+  resources:
+    - name: redis-helm-release
+      base:
+        apiVersion: helm.crossplane.io/v1beta1
+        kind: Release
+        metadata:
+          annotations:
+            crossplane.io/external-name: # patched
+        spec:
+          rollbackLimit: 3
+          forProvider:
+            chart:
+              name: redis
+              repository: https://charts.bitnami.com/bitnami
+              version: "17.8.0"
+            values:
+              architecture: standalone
+          providerConfigRef:
+            name: default
+      patches:
+        - fromFieldPath: metadata.labels["crossplane.io/claim-namespace"]
+          toFieldPath: "spec.forProvider.namespace"
+        - fromFieldPath: metadata.name
+          toFieldPath: metadata.annotations[crossplane.io/external-name]
+          policy:
+            fromFieldPath: Required
+        - fromFieldPath: metadata.name
+          toFieldPath:   metadata.name
+          transforms:
+            - type: string
+              string:
+                fmt: "%s-redis"
+      readinessChecks:
+      - type: MatchString
+        fieldPath: status.atProvider.state
+        matchString: deployed
